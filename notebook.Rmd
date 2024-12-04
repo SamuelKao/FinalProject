@@ -10,33 +10,92 @@ data <-data[-1,]
 data
 ```
 
-```{r}
-# get relevent data first
-relevant_columns <- data.frame(
-  Age = data$Q1,
-  Gender = data$Q2,
-  Country = data$Q3,
-  Education = data$Q4, # Adjust based on your actual column name
-  Compensation = data$Q24 # Adjust based on your actual column name
-)
-relevant_columns
-```
+
+Q1
+### Methods
+The dataset provides information on respondents' age, gender, country, and highest level of education, alongside their reported income levels. Compensation data was cleaned and transformed by converting ranges into random values within specified bounds to enhance variability. Rows with missing or null compensation values were excluded to maintain data integrity. To explore trends, the data was aggregated and visualized using box plots and bar charts to examine correlations between income and demographic categories such as age, gender, country, and education.
+
+### Analysis
+
 
 ```{r}
-selected_data <- relevant_columns %>%
-  filter(!is.na(Age) & !is.na(Gender) & !is.na(Country) &
-           !is.na(Education) & !is.na(Compensation))
+selected_data <- data %>%
+  select(Q1, Q2, Q3, Q4, Q24) %>%
+  rename(
+    Age = Q1,
+    Gender = Q2,
+    Country = Q3,
+    Education = Q4,
+    Compensation = Q24
+  )
+
+# Clean and preprocess the data
+# Convert compensation ranges into numeric midpoints
+selected_data$Compensation <- gsub("[^0-9\\-]", "", selected_data$Compensation) %>%
+  sapply(function(x) {
+    if (grepl("-", x)) {
+      bounds <- as.numeric(unlist(strsplit(x, "-")))
+      return(runif(1, min = bounds[1], max = bounds[2]))
+    } else if (x != "") {
+      return(as.numeric(x))
+    } else {
+      return(NA)
+    }
+  })
+
 selected_data
 
 ```
 ```{r}
-ggplot(selected_data, aes(x = Education, y = Compensation)) +
-  geom_boxplot(aes(fill = Education)) +
-  labs(title = "Compensation by Education Level",
+# Remove rows with missing values in critical columns
+selected_data <- selected_data %>%
+  filter(!is.na(Age) & !is.na(Gender) & !is.na(Country) &
+           !is.na(Education) & !is.na(Compensation))
+
+# Calculate average income by age, gender, and country
+avg_income_by_demo <- selected_data %>%
+  group_by(Age, Gender, Country) %>%
+  summarise(Average_Compensation = mean(Compensation, na.rm = TRUE), .groups = "drop")
+
+# Calculate average income by education
+avg_income_by_edu <- selected_data %>%
+  group_by(Education) %>%
+  summarise(Average_Compensation = mean(Compensation, na.rm = TRUE), .groups = "drop")
+
+# Visualize: Income Distribution by Education Level
+ggplot(selected_data, aes(x = Education, y = Compensation, fill = Gender)) +
+  geom_boxplot() +
+  labs(title = "Income Distribution by Education Level and Gender",
        x = "Education Level",
        y = "Compensation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Visualize: Average Income by Country
+ggplot(avg_income_by_demo, aes(x = reorder(Country, -Average_Compensation), y = Average_Compensation, fill = Gender)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Average Income by Country and Gender",
+       x = "Country",
+       y = "Average Compensation") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# Visualize: Average Income by Age
+ggplot(avg_income_by_demo, aes(x = Age, y = Average_Compensation, fill = Gender)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Average Income by Age and Gender",
+    x = "Age",
+    y = "Average Compensation",
+    fill = "Gender"
+  ) +
+  theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
+The findings reveal distinct income patterns across demographic groups. Age strongly correlates with income, as older age groups (e.g., 55-59, 70+) generally report higher average compensation, likely reflecting accumulated experience. Gender disparities in income are evident, with men earning higher compensation on average across most age and education levels. The role of education is significant, as advanced degrees like doctoral and professional degrees correlate with higher median incomes. However, the variability within each educational category suggests other influencing factors. Country-level differences show significant disparities, with respondents from developed regions (e.g., Switzerland, the United States) reporting higher incomes compared to those from developing regions.
+
+### Conclusion
+The analysis demonstrates the substantial impact of age, gender, country, and education on income levels among data science professionals. Advanced education and experience play a critical role in achieving higher compensation, though gender disparities persist. Regional economic conditions further amplify these differences, emphasizing the importance of context in interpreting income trends. These insights are valuable for understanding global economic inequities in the data science field and can inform policies aimed at reducing disparities and promoting equitable professional development.
 Q2
 
 
@@ -234,3 +293,6 @@ The analysis revealed distinct trends in programming language preferences among 
 
 ### Conclusion
 The study revealed distinct programming language preferences that evolve with practitioners' experience levels and vary by industry roles. Python's widespread adoption across all levels underscores its utility as a foundational language in the data science ecosystem. Meanwhile, experts and industry specialists integrate niche languages to address specific challenges. These findings provide actionable insights for curriculum design in education, workforce training, and recruitment strategies, emphasizing the importance of Python for beginners and advanced language fluency for experienced professionals in specialized roles.
+
+
+
