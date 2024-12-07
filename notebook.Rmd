@@ -4,6 +4,21 @@ output: html_document
 date: "2024-12-03"
 ---
 
+# Contribution Statement
+Student 1: 
+
+Student 2:
+
+# Introduction
+Understanding the global trends and dynamics of the data science and machine learning (DS/ML) community is critical in an era where these fields are driving innovation across industries. The Kaggle Survey 2020 dataset offers a comprehensive glimpse into this domain, capturing over 20,000 responses from individuals worldwide. With 350 columns detailing diverse aspects such as professional roles, tools, learning resources, and industry practices, the dataset presents a unique opportunity to explore the multifaceted landscape of DS/ML.
+
+Key questions guiding this study include:
+
+1. Demographic and Economic Correlation: How do factors like age, gender, and country of residence influence income levels among DS/ML professionals? Additionally, what role does the highest level of education play in shaping these trends?
+2. Programming Language Adoption: Are there observable patterns in programming language preferences across varying experience levels? How do these preferences vary by industry?
+3. Impact of Cloud Computing: Which cloud platforms are associated with higher adoption of advanced ML tools, and how do these platforms correlate with productivity and satisfaction?
+4. Effectiveness of Educational Resources: What are the most impactful learning resources (e.g., MOOCs, certifications, books) as perceived by respondents, and how do their effectiveness vary across experience levels and career outcomes?
+
 ```{r}
 data <- read.csv("kaggle_survey_2020_responses.csv", stringsAsFactors = FALSE)
 data <-data[-1,]
@@ -11,7 +26,7 @@ data
 ```
 
 
-Q1
+## Question 1
 ### Methods
 The dataset provides information on respondents' age, gender, country, and highest level of education, alongside their reported income levels. Compensation data was cleaned and transformed by converting ranges into random values within specified bounds to enhance variability. Rows with missing or null compensation values were excluded to maintain data integrity. To explore trends, the data was aggregated and visualized using box plots and bar charts to examine correlations between income and demographic categories such as age, gender, country, and education.
 
@@ -96,8 +111,9 @@ The findings reveal distinct income patterns across demographic groups. Age stro
 
 ### Conclusion
 The analysis demonstrates the substantial impact of age, gender, country, and education on income levels among data science professionals. Advanced education and experience play a critical role in achieving higher compensation, though gender disparities persist. Regional economic conditions further amplify these differences, emphasizing the importance of context in interpreting income trends. These insights are valuable for understanding global economic inequities in the data science field and can inform policies aimed at reducing disparities and promoting equitable professional development.
-Q2
 
+
+## Question 2
 
 ### Methods
 Respondents' programming language usage and industry roles were derived from the survey's structured questions. Experience levels were classified into beginner, intermediate, and expert categories using the years of coding experience provided by the respondents. Proportional usage of programming languages across experience levels and industries was computed to identify trends. Visualizations were generated using stacked bar charts to compare the proportional adoption of programming languages across both experience levels and industry categories.
