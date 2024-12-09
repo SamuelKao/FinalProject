@@ -1,13 +1,13 @@
 ---
-title: "finalproject"
+title: "Final Project"
 output: pdf_document
 date: "2024-12-03"
 ---
 
 # Contribution Statement
-Student 1: 
+Student 1: Did Introduction, Q1, Q2.
 
-Student 2:
+Student 2: Did Q3, Q4, Advanced Analysis, and Conclusion. Did report formatting.
 
 # Introduction
 Understanding the global trends and dynamics of the data science and machine learning (DS/ML) community is critical in an era where these fields are driving innovation across industries. The Kaggle Survey 2020 dataset offers a comprehensive glimpse into this domain, capturing over 20,000 responses from individuals worldwide. With 350 columns detailing diverse aspects such as professional roles, tools, learning resources, and industry practices, the dataset presents a unique opportunity to explore the multifaceted landscape of DS/ML.
