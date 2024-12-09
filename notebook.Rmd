@@ -1,6 +1,6 @@
 ---
 title: "finalproject"
-output: html_document
+output: pdf_document
 date: "2024-12-03"
 ---
 
@@ -16,24 +16,29 @@ Key questions guiding this study include:
 
 1. Demographic and Economic Correlation: How do factors like age, gender, and country of residence influence income levels among DS/ML professionals? Additionally, what role does the highest level of education play in shaping these trends?
 2. Programming Language Adoption: Are there observable patterns in programming language preferences across varying experience levels? How do these preferences vary by industry?
-3. Impact of Cloud Computing: Which cloud platforms are associated with higher adoption of advanced ML tools, and how do these platforms correlate with productivity and satisfaction?
-4. Effectiveness of Educational Resources: What are the most impactful learning resources (e.g., MOOCs, certifications, books) as perceived by respondents, and how do their effectiveness vary across experience levels and career outcomes?
+3. Impact of Cloud Computing: How does the adoption of advanced machine learning tools vary across different cloud platforms (e.g., AWS, GCP, Azure)? Which platforms show the highest proportion of advanced ML users, and what insights can this provide about user preferences or specialization trends in cloud services?
+4. Effectiveness of Educational Resources: How do respondents' experience levels and compensation distributions vary across different educational resources (e.g., MOOCs, certifications, books)? Can we identify which resources are associated with higher compensation levels or a greater proportion of experienced professionals?
 
-```{r}
+```{r include = FALSE}
 data <- read.csv("kaggle_survey_2020_responses.csv", stringsAsFactors = FALSE)
-data <-data[-1,]
-data
+data <- data[-1, ]
+```
+```{r include = FALSE}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
 ```
 
-
 ## Question 1
+How do demographic factors (e.g., age, gender, country) correlate with income levels among data science professionals, and what role does the highest level of education play in these trends?
+
 ### Methods
 The dataset provides information on respondents' age, gender, country, and highest level of education, alongside their reported income levels. Compensation data was cleaned and transformed by converting ranges into random values within specified bounds to enhance variability. Rows with missing or null compensation values were excluded to maintain data integrity. To explore trends, the data was aggregated and visualized using box plots and bar charts to examine correlations between income and demographic categories such as age, gender, country, and education.
 
 ### Analysis
 
 
-```{r}
+```{r include = FALSE}
 selected_data <- data %>%
   select(Q1, Q2, Q3, Q4, Q24) %>%
   rename(
@@ -57,15 +62,12 @@ selected_data$Compensation <- gsub("[^0-9\\-]", "", selected_data$Compensation) 
       return(NA)
     }
   })
-
-selected_data
-
 ```
-```{r}
+```{r echo = FALSE, fig.height=4, fig.width=6}
 # Remove rows with missing values in critical columns
 selected_data <- selected_data %>%
   filter(!is.na(Age) & !is.na(Gender) & !is.na(Country) &
-           !is.na(Education) & !is.na(Compensation))
+    !is.na(Education) & !is.na(Compensation))
 
 # Calculate average income by age, gender, and country
 avg_income_by_demo <- selected_data %>%
@@ -80,18 +82,22 @@ avg_income_by_edu <- selected_data %>%
 # Visualize: Income Distribution by Education Level
 ggplot(selected_data, aes(x = Education, y = Compensation, fill = Gender)) +
   geom_boxplot() +
-  labs(title = "Income Distribution by Education Level and Gender",
-       x = "Education Level",
-       y = "Compensation") +
+  labs(
+    title = "Income Distribution by Education Level and Gender",
+    x = "Education Level",
+    y = "Compensation"
+  ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # Visualize: Average Income by Country
 ggplot(avg_income_by_demo, aes(x = reorder(Country, -Average_Compensation), y = Average_Compensation, fill = Gender)) +
   geom_bar(stat = "identity", position = "dodge") +
-  labs(title = "Average Income by Country and Gender",
-       x = "Country",
-       y = "Average Compensation") +
+  labs(
+    title = "Average Income by Country and Gender",
+    x = "Country",
+    y = "Average Compensation"
+  ) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 # Visualize: Average Income by Age
@@ -114,13 +120,14 @@ The analysis demonstrates the substantial impact of age, gender, country, and ed
 
 
 ## Question 2
+Are there distinct patterns in programming language usage between beginner, intermediate, and expert practitioners? How does this adoption vary across industries?
 
 ### Methods
 Respondents' programming language usage and industry roles were derived from the survey's structured questions. Experience levels were classified into beginner, intermediate, and expert categories using the years of coding experience provided by the respondents. Proportional usage of programming languages across experience levels and industries was computed to identify trends. Visualizations were generated using stacked bar charts to compare the proportional adoption of programming languages across both experience levels and industry categories.
 
 
 ### Analysis
-```{r}
+```{r include = FALSE}
 selected_data <- data %>%
   select(Q6, Q7_Part_1:Q7_Part_12) %>%
   rename(
@@ -145,47 +152,45 @@ selected_data <- selected_data %>%
 
 
 
-```{r}
-
-
+```{r include = FALSE}
 # Pivot table
 pivot_data <- selected_data %>%
   pivot_longer(
     cols = Python:None, # Columns for programming languages
     names_to = "Language", # Create a new column for language names
-    values_to = "Value"    # Create a new column for values (e.g., Yes/No or other indicators)
+    values_to = "Value" # Create a new column for values (e.g., Yes/No or other indicators)
   ) %>%
-  mutate(Value = ifelse(Value!='', 1, 0)) %>% # Convert "Yes" to 1 and others to 0
+  mutate(Value = ifelse(Value != "", 1, 0)) %>% # Convert "Yes" to 1 and others to 0
   group_by(Experience, Language) %>%
-  summarize(Count = sum(Value, na.rm = TRUE), .groups = 'drop') %>%
+  summarize(Count = sum(Value, na.rm = TRUE), .groups = "drop") %>%
   pivot_wider(
     names_from = Language, # Spread languages into columns
-    values_from = Count,   # Fill with counts
-    values_fill = 0        # Fill missing values with 0
+    values_from = Count, # Fill with counts
+    values_fill = 0 # Fill missing values with 0
   )
 
 # Print the final pivot table
-pivot_data <- pivot_data[-1,]
+pivot_data <- pivot_data[-1, ]
 pivot_data
-
 ```
 
-```{r}
+```{r include = FALSE}
 create_pie_chart_with_legend <- function(column_name) {
   values <- pivot_data[[column_name]]
   labels <- pivot_data$Experience
   total <- sum(values)
-  
+
   # Calculate percentages
   percentages <- round(values / total * 100, 1)
   legend_labels <- paste(labels, "(", percentages, "%)", sep = "")
-  
+
   # Generate pie chart
-  pie(values, 
-      labels = NA, # Remove labels from the pie chart
-      main = paste("Pie Chart for", column_name),
-      col = rainbow(length(values)))
-  
+  pie(values,
+    labels = NA, # Remove labels from the pie chart
+    main = paste("Pie Chart for", column_name),
+    col = rainbow(length(values))
+  )
+
   # Add a legend
   legend("topright", legend = legend_labels, fill = rainbow(length(values)), cex = 0.8)
 }
@@ -194,13 +199,12 @@ create_pie_chart_with_legend <- function(column_name) {
 for (column in colnames(pivot_data)[-1]) {
   create_pie_chart_with_legend(column)
 }
-
 ```
 
 
 
 
-```{r}
+```{r echo = FALSE, fig.height=4, fig.width=6}
 pivot_data_long <- pivot_data %>%
   pivot_longer(cols = -Experience, names_to = "Language", values_to = "Usage")
 pivot_data_long <- pivot_data_long %>%
@@ -213,13 +217,15 @@ pivot_data_long <- pivot_data_long %>%
 # Create proportional stacked bar chart
 ggplot(pivot_data_long, aes(x = Language, y = Proportion, fill = Experience)) +
   geom_bar(stat = "identity", position = "fill") +
-  labs(title = "Proportional Programming Language Usage by Experience Level", 
-       x = "Programming Language", 
-       y = "Proportion") +
+  labs(
+    title = "Proportional Programming Language Usage by Experience Level",
+    x = "Programming Language",
+    y = "Proportion"
+  ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-```{r}
+```{r include = FALSE}
 selected_data <- data %>%
   select(Q5, Q7_Part_1:Q7_Part_12) %>%
   rename(
@@ -240,30 +246,30 @@ selected_data <- data %>%
 selected_data
 ```
 
-```{r}
+```{r include = FALSE}
 pivot_data <- selected_data %>%
   pivot_longer(
     cols = Python:None, # Columns for programming languages
     names_to = "Language", # Create a new column for language names
-    values_to = "Value"    # Create a new column for values (e.g., Yes/No or other indicators)
+    values_to = "Value" # Create a new column for values (e.g., Yes/No or other indicators)
   ) %>%
-  mutate(Value = ifelse(Value!='', 1, 0)) %>% # Convert "Yes" to 1 and others to 0
+  mutate(Value = ifelse(Value != "", 1, 0)) %>% # Convert "Yes" to 1 and others to 0
   group_by(Industry, Language) %>%
-  summarize(Count = sum(Value, na.rm = TRUE), .groups = 'drop') %>%
+  summarize(Count = sum(Value, na.rm = TRUE), .groups = "drop") %>%
   pivot_wider(
     names_from = Language, # Spread languages into columns
-    values_from = Count,   # Fill with counts
-    values_fill = 0        # Fill missing values with 0
+    values_from = Count, # Fill with counts
+    values_fill = 0 # Fill missing values with 0
   )
 
 # Print the final pivot table
-pivot_data <- pivot_data[-1,]
+pivot_data <- pivot_data[-1, ]
 pivot_data
 ```
 
 
 
-```{r}
+```{r echo = FALSE, fig.height=4, fig.width=6}
 pivot_data_long <- pivot_data %>%
   pivot_longer(cols = -Industry, names_to = "Language", values_to = "Usage")
 pivot_data_long <- pivot_data_long %>%
@@ -276,15 +282,16 @@ pivot_data_long <- pivot_data_long %>%
 # Create proportional stacked bar chart
 ggplot(pivot_data_long, aes(x = Language, y = Proportion, fill = Industry)) +
   geom_bar(stat = "identity", position = "fill") +
-  labs(title = "Proportional Programming Language Usage by Experience Level", 
-       x = "Programming Language", 
-       y = "Proportion") +
+  labs(
+    title = "Proportional Programming Language Usage by Experience Level",
+    x = "Programming Language",
+    y = "Proportion"
+  ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-```{r}
-
-
+```{r echo = FALSE, fig.height=4, fig.width=6}
+library(RColorBrewer)
 # Define a larger, more varied color palette
 color_palette <- brewer.pal(n = min(length(unique(pivot_data_long$Industry)), 12), "Set3")
 
@@ -296,10 +303,12 @@ if (length(unique(pivot_data_long$Industry)) > 12) {
 # Plot with custom colors
 ggplot(pivot_data_long, aes(x = Language, y = Proportion, fill = Industry)) +
   geom_bar(stat = "identity", position = "fill") +
-  scale_fill_manual(values = color_palette) +  # Apply the custom palette
-  labs(title = "Proportional Programming Language Usage by Industry", 
-       x = "Programming Language", 
-       y = "Proportion") +
+  scale_fill_manual(values = color_palette) + # Apply the custom palette
+  labs(
+    title = "Proportional Programming Language Usage by Industry",
+    x = "Programming Language",
+    y = "Proportion"
+  ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
@@ -310,5 +319,477 @@ The analysis revealed distinct trends in programming language preferences among 
 ### Conclusion
 The study revealed distinct programming language preferences that evolve with practitioners' experience levels and vary by industry roles. Python's widespread adoption across all levels underscores its utility as a foundational language in the data science ecosystem. Meanwhile, experts and industry specialists integrate niche languages to address specific challenges. These findings provide actionable insights for curriculum design in education, workforce training, and recruitment strategies, emphasizing the importance of Python for beginners and advanced language fluency for experienced professionals in specialized roles.
 
+## Question 3
+How does the adoption of advanced machine learning tools vary across different cloud platforms (e.g., AWS, GCP, Azure)? Which platforms show the highest proportion of advanced ML users, and what insights can this provide about user preferences or specialization trends in cloud services?
 
+### Methods
+We analyzed the relationship between cloud platform usage and advanced machine learning tool adoption using the Kaggle survey dataset. Advanced ML users were identified based on their reported use of tools such as Dense Neural Networks and Transformer Networks. Cloud platform codes were mapped to human-readable names, and the data was reshaped to analyze individual platform usage. We calculated the total users, advanced ML users, and their proportions for each platform, visualizing the results in a proportional bar chart to highlight the platforms most associated with advanced ML adoption. This approach provided clear insights into user preferences and platform trends.
+
+### Analysis
+```{r include = FALSE}
+data <- read.csv("kaggle_survey_2020_responses.csv", stringsAsFactors = FALSE)
+data <- data[-1, ]
+head(data)
+```
+```{r include = FALSE}
+# Define columns representing advanced ML tools
+advanced_ml_cols <- c("Q17_Part_6", "Q17_Part_7", "Q17_Part_8", "Q17_Part_9", "Q17_Part_10")
+
+# Convert empty strings and whitespace to NA for the relevant columns
+data <- data %>%
+  mutate(across(all_of(advanced_ml_cols), ~ ifelse(. == "" | grepl("^\\s*$", .), NA, .)))
+
+# Create a column to flag advanced ML users
+data <- data %>%
+  mutate(Advanced_User = rowSums(!is.na(select(., all_of(advanced_ml_cols)))) > 0)
+
+# Verify the flagging
+print(head(select(data, Advanced_User, all_of(advanced_ml_cols))))
+
+# Check count of TRUE and FALSE in Advanced_User
+print(table(data$Advanced_User))
+```
+```{r include = FALSE}
+
+```
+```{r include = FALSE}
+library(dplyr)
+library(tidyr)
+
+
+# Define cloud platform columns
+cloud_cols <- grep("^Q26_A_Part", names(data), value = TRUE)
+
+# Replace empty strings with NA in cloud platform columns
+data <- data %>%
+  mutate(across(all_of(cloud_cols), ~ ifelse(. == "" | grepl("^\\s*$", .), NA, .)))
+
+# Reshape data to long format for cloud platforms
+cloud_data <- data %>%
+  select(Advanced_User, all_of(cloud_cols)) %>%
+  pivot_longer(
+    cols = all_of(cloud_cols),
+    names_to = "Cloud_Platform",
+    values_to = "Used"
+  ) %>%
+  rename(
+    Cloud_Platform = Cloud_Platform
+  )
+
+# Filter for respondents who selected a cloud platform (non-NA Used values)
+cloud_data <- cloud_data %>%
+  filter(!is.na(Used))
+
+# Verify reshaped data
+print(head(cloud_data))
+
+# Count the number of Advanced_User respondents in the filtered data
+advanced_user_counts <- cloud_data %>%
+  count(Advanced_User)
+
+# Print the results
+print(advanced_user_counts)
+```
+```{r include = FALSE}
+# Group by Cloud_Platform and calculate metrics
+cloud_summary <- cloud_data %>%
+  group_by(Cloud_Platform) %>%
+  summarise(
+    Total_Users = n(), # Total number of users per platform
+    Advanced_ML_Users = sum(Advanced_User, na.rm = TRUE) # Count of advanced ML users
+  ) %>%
+  mutate(
+    Proportion = Advanced_ML_Users / Total_Users # Calculate proportion of advanced ML users
+  ) %>%
+  arrange(desc(Proportion)) # Sort by proportion in descending order
+
+# Verify results
+print(cloud_summary)
+```
+```{r echo = FALSE, fig.height=4, fig.width=6}
+# Define cloud platform mapping
+cloud_platform_mapping <- c(
+  "Q26_A_Part_1" = "Amazon Web Services (AWS)",
+  "Q26_A_Part_2" = "Microsoft Azure",
+  "Q26_A_Part_3" = "Google Cloud Platform (GCP)",
+  "Q26_A_Part_4" = "IBM Cloud / Red Hat",
+  "Q26_A_Part_5" = "Oracle Cloud",
+  "Q26_A_Part_6" = "SAP Cloud",
+  "Q26_A_Part_7" = "Salesforce Cloud",
+  "Q26_A_Part_8" = "VMware Cloud",
+  "Q26_A_Part_9" = "Alibaba Cloud",
+  "Q26_A_Part_10" = "Tencent Cloud",
+  "Q26_A_Part_11" = "None",
+  "Q26_A_OTHER" = "Other"
+)
+
+# Apply the mapping to rename Cloud_Platform codes to readable names
+cloud_data$Cloud_Platform <- recode(cloud_data$Cloud_Platform, !!!cloud_platform_mapping)
+
+# Create a bar graph of advanced ML users by cloud platform with renamed platforms
+ggplot(cloud_data, aes(x = Cloud_Platform, fill = as.factor(Advanced_User))) +
+  geom_bar(position = "fill") + # position="fill" stacks the bars to show proportions
+  labs(
+    title = "Proportion of Advanced ML Users by Cloud Platform",
+    x = "Cloud Platform",
+    y = "Proportion of Users",
+    fill = "Advanced ML User"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels for readability
+```
+The analysis reveals significant variation in the proportion of advanced machine learning (ML) users across different cloud platforms. The following insights can be drawn:
+
+- **Tencent Cloud** has the highest proportion of advanced ML users, with approximately 73.7% of its users classified as advanced. This suggests that Tencent Cloud might be particularly well-suited for advanced ML tasks or attract users with more expertise.
+- **Alibaba Cloud** follows closely, with 68.7% advanced ML users. Both Chinese platforms demonstrate a strong association with advanced ML activities, possibly due to their tailored offerings in AI and big data analytics.
+- **Google Cloud Platform (GCP)** and **Amazon Web Services (AWS)** maintain strong proportions of advanced ML users at 65.2% and 60.4%, respectively. These platforms are renowned for their comprehensive ML services, such as TensorFlow on GCP and SageMaker on AWS, which cater to users with diverse levels of expertise.
+- **Microsoft Azure** has a slightly lower proportion at 55.1%, reflecting its broad usage across both enterprise and technical user bases.
+- **VMware Cloud** (62.1%) and **IBM Cloud / Red Hat** (60.5%) show notable engagement among advanced ML users. VMware's focus on virtualization and IBM's AI-driven services like Watson likely appeal to experienced users.
+- **SAP Cloud**, **Oracle Cloud**, and **Salesforce Cloud** have lower proportions of advanced ML users, with values ranging from 47.4% to 52.1%. These platforms may cater more to enterprise and business use cases rather than technical ML applications.
+- Interestingly, **None** (users not utilizing any cloud platform) constitutes a large group, but only 39.4% of these are advanced ML users. This indicates that cloud adoption is strongly linked to advanced ML capabilities.
+
+### Conclusion
+The results suggest a correlation between platform-specific features and their appeal to advanced ML users. Cloud providers like Tencent, Alibaba, GCP, and AWS dominate in attracting advanced practitioners, likely due to their robust AI and ML ecosystems. In contrast, platforms focused more on enterprise-level solutions (e.g., Oracle and Salesforce Cloud) show a weaker association with advanced ML users. These insights can help guide organizations in selecting cloud platforms and inform providers on how to refine their services to better support advanced ML workflows.
+
+## Question 4
+How do respondents' experience levels and compensation distributions vary across different educational resources (e.g., MOOCs, certifications, books)? Can we identify which resources are associated with higher compensation levels or a greater proportion of experienced professionals?
+
+### Methods
+Survey data was processed to analyze experience levels and compensation ranges across learning resources. Relevant columns were reshaped into a long format, with missing or empty values replaced appropriately. Experience levels (Q15) and compensation ranges (Q24) were standardized with ordered categories, while learning resources (Q37) were recoded into descriptive labels. Proportions of each category were calculated and visualized using bar plots to compare the distribution of experience and compensation across different learning resources.
+
+### Analysis
+```{r include = FALSE}
+library(tidyverse)
+library(scales)
+```
+```{r include = FALSE}
+head(data)
+```
+```{r include = FALSE}
+# Include Q24 (compensation data) in experience_data
+experience_data <- data %>%
+  select(Q15, Q24, starts_with("Q37")) %>% # Include Q24 explicitly
+  pivot_longer(
+    cols = starts_with("Q37"),
+    names_to = "Resource",
+    values_to = "Used"
+  ) %>%
+  filter(!is.na(Used) & Used != "") %>% # Remove rows where the resource was not selected or is empty
+  mutate(Q24 = ifelse(Q24 == "", "Unknown", Q24)) # Replace empty strings in Q24 with "Unknown"
+
+# Verify the resulting data
+head(experience_data)
+```
+```{r include = FALSE}
+# Define the ordered experience levels
+ordered_experience_levels <- c(
+  "Under 1 year", "1-2 years", "2-3 years", "3-4 years", "4-5 years",
+  "5-10 years", "10-20 years", "20 or more years", "I do not use machine learning methods"
+)
+
+# Apply the ordering to Q15
+experience_data <- experience_data %>%
+  mutate(Q15 = factor(Q15, levels = ordered_experience_levels)) # Set factor levels for proper ordering
+
+# Verify the ordering
+levels(experience_data$Q15)
+```
+```{r include = FALSE}
+# Define the mapping of learning resources
+resource_mapping <- c(
+  "Q37_Part_1" = "Coursera",
+  "Q37_Part_2" = "edX",
+  "Q37_Part_3" = "Kaggle Learn Courses",
+  "Q37_Part_4" = "DataCamp",
+  "Q37_Part_5" = "Fast.ai",
+  "Q37_Part_6" = "Udacity",
+  "Q37_Part_7" = "Udemy",
+  "Q37_Part_8" = "LinkedIn Learning",
+  "Q37_Part_9" = "Cloud-certification programs",
+  "Q37_Part_10" = "University Courses",
+  "Q37_Part_11" = "None",
+  "Q37_OTHER" = "Other"
+)
+
+# Apply the mapping to the Resource column
+experience_data <- experience_data %>%
+  mutate(Resource = recode(Resource, !!!resource_mapping)) # Recode to human-readable names
+
+# Verify the mapping
+unique(experience_data$Resource)
+```
+```{r include = FALSE}
+# Calculate proportions of experience levels for each learning resource
+experience_proportions <- experience_data %>%
+  filter(!is.na(Q15)) %>% # Ensure no missing experience levels
+  group_by(Resource, Q15) %>% # Group by resource and experience level
+  summarise(Count = n(), .groups = "drop") %>% # Count occurrences
+  group_by(Resource) %>% # Regroup by resource
+  mutate(Proportion = Count / sum(Count)) %>% # Calculate proportions
+  arrange(Resource, Q15) # Sort experience levels
+
+# Verify the sorted proportions
+head(experience_proportions)
+```
+
+```{r echo = FALSE, fig.height=4, fig.width=6}
+# Create the plot for Q15 with sorted experience levels
+ggplot(experience_proportions, aes(x = Resource, y = Proportion, fill = Q15)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(
+    values = c(
+      "Under 1 year" = "pink", "1-2 years" = "blue", "2-3 years" = "skyblue",
+      "3-4 years" = "lightblue", "4-5 years" = "cyan", "5-10 years" = "green",
+      "10-20 years" = "yellow", "20 or more years" = "orange",
+      "I do not use machine learning methods" = "red"
+    ),
+    name = "Experience Level"
+  ) +
+  labs(
+    title = "Proportion of Experience Levels by Learning Resource",
+    x = "Learning Resource",
+    y = "Proportion",
+    fill = "Experience Level"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r include = FALSE}
+# Include Q24 (compensation data) in experience_data
+experience_data <- data %>%
+  select(Q15, Q24, starts_with("Q37")) %>% # Include Q24 explicitly
+  pivot_longer(
+    cols = starts_with("Q37"),
+    names_to = "Resource",
+    values_to = "Used"
+  ) %>%
+  filter(!is.na(Used) & Used != "") %>% # Remove rows where the resource was not selected or is empty
+  mutate(Q24 = ifelse(Q24 == "", "Unknown", Q24)) # Replace empty strings in Q24 with "Unknown"
+
+# Verify the resulting data
+head(experience_data)
+```
+```{r include = FALSE}
+# Replace empty strings in Q24 with "Unknown"
+compensation_data <- experience_data %>%
+  mutate(Q24 = ifelse(Q24 == "", "Unknown", Q24))
+
+# Verify the replacement
+unique(compensation_data$Q24)
+```
+```{r include = FALSE}
+# Define the ordered compensation ranges
+ordered_compensation_ranges <- c(
+  "$0-999", "1,000-1,999", "2,000-2,999", "3,000-3,999", "4,000-4,999", "5,000-7,499",
+  "7,500-9,999", "10,000-14,999", "15,000-19,999", "20,000-24,999", "25,000-29,999",
+  "30,000-39,999", "40,000-49,999", "50,000-59,999", "60,000-69,999", "70,000-79,999",
+  "80,000-89,999", "90,000-99,999", "100,000-124,999", "125,000-149,999", "150,000-199,999",
+  "200,000-249,999", "250,000-299,999", "300,000-500,000", "> $500,000"
+)
+
+# Apply the ordering to Q24
+compensation_data <- compensation_data %>%
+  mutate(Q24 = factor(Q24, levels = ordered_compensation_ranges))
+
+# Verify that Q24 is ordered correctly
+levels(compensation_data$Q24)
+```
+```{r include = FALSE}
+# Define the mapping
+resource_mapping <- c(
+  "Q37_Part_1" = "Coursera",
+  "Q37_Part_2" = "edX",
+  "Q37_Part_3" = "Kaggle Learn Courses",
+  "Q37_Part_4" = "DataCamp",
+  "Q37_Part_5" = "Fast.ai",
+  "Q37_Part_6" = "Udacity",
+  "Q37_Part_7" = "Udemy",
+  "Q37_Part_8" = "LinkedIn Learning",
+  "Q37_Part_9" = "Cloud-certification programs",
+  "Q37_Part_10" = "University Courses",
+  "Q37_Part_11" = "None",
+  "Q37_OTHER" = "Other"
+)
+
+# Apply the mapping
+compensation_data <- compensation_data %>%
+  mutate(Resource = recode(Resource, !!!resource_mapping))
+
+# Verify the mapping
+unique(compensation_data$Resource)
+```
+```{r include = FALSE}
+# Calculate proportions of compensation levels for each learning resource
+compensation_proportions <- compensation_data %>%
+  filter(!is.na(Q24)) %>% # Ensure no missing compensation levels
+  group_by(Resource, Q24) %>% # Group by resource and compensation level
+  summarise(Count = n(), .groups = "drop") %>% # Count occurrences
+  group_by(Resource) %>% # Regroup by resource
+  mutate(Proportion = Count / sum(Count)) %>% # Calculate proportions
+  arrange(Resource, Q24) # Sort compensation levels
+
+# Verify the proportions
+head(compensation_proportions)
+```
+```{r echo = FALSE, fig.height=4, fig.width=6}
+# Create the plot
+ggplot(compensation_proportions, aes(x = Resource, y = Proportion, fill = Q24)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(
+    values = colorRampPalette(c("blue", "green", "yellow", "red"))(length(ordered_compensation_ranges)),
+    name = "Compensation Range"
+  ) +
+  labs(
+    title = "Proportion of Compensation Ranges by Learning Resource",
+    x = "Learning Resource",
+    y = "Proportion",
+    fill = "Compensation Range"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+The analysis highlights significant patterns in how learning resources are utilized across varying levels of experience and compensation. For experience levels, newer learners with less than a year of experience heavily rely on accessible platforms like Coursera and LinkedIn Learning, suggesting these platforms cater well to beginners. In contrast, advanced learners with over 10 years of experience are more inclined towards structured programs such as university courses or certification programs, reflecting their need for deeper, specialized knowledge.
+
+Regarding compensation, resources like Cloud-certification programs and university courses showed a higher proportion of users in the upper compensation ranges, indicating their potential impact on career advancement. Conversely, platforms like Udemy and LinkedIn Learning had more users in lower compensation brackets, suggesting they are often leveraged for affordable, foundational learning. These insights demonstrate a clear connection between the type of learning resource, career stage, and compensation outcomes, emphasizing the diverse needs of learners across their career trajectories.
+
+### Conclusion
+In conclusion, the findings reveal distinct trends in how learning resources align with career stages and compensation levels in data science. Beginner-friendly platforms like Coursera and LinkedIn Learning are pivotal in attracting and supporting early-career professionals, while advanced learners gravitate towards more formalized education options such as certification programs and university courses, which are linked to higher compensation outcomes. These patterns underscore the importance of tailoring learning resources to meet the evolving needs of individuals at different experience levels. Furthermore, the observed correlation between resource utilization and compensation highlights the critical role of targeted skill development in career advancement, providing valuable insights for both learners and educators in shaping effective learning pathways.
+
+# Advanced Analysis
+How do education levels, years of experience, and compensation interact to define distinct career stages in data science? Can we identify professional pathways, from entry-level roles to senior positions, and determine how education and experience contribute to progression between these stages?
+
+## Methods
+We analyzed career pathways in data science by clustering respondents based on experience (Q15), compensation (Q24), and education level (Q4). Experience levels and compensation ranges were mapped to numeric values, while education level was encoded as a numeric factor. Missing values were replaced with 0, and features were standardized to ensure comparability. Using K-Means clustering with four clusters, we identified distinct respondent groups. Principal Component Analysis (PCA) was used to visualize the clusters, and cluster characteristics—including average experience, compensation, and education level—were summarized to uncover patterns in career progression and demographics.
+
+## Analysis
+```{r include = FALSE}
+library(tidyverse)
+library(cluster)
+library(factoextra)
+library(dplyr)
+library(ggplot2)
+library(scales)
+```
+```{r include = FALSE}
+# Load the data
+data <- read.csv("E:/Classes/DSC 190/FinalProject/kaggle_survey_2020_responses.csv")
+
+# Select relevant columns
+columns <- c("Q15", "Q4", "Q24")
+data <- data[, columns]
+
+# Map Q15 (Experience) to numeric values
+experience_mapping <- c(
+  "Under 1 year" = 0.5,
+  "1-2 years" = 1.5,
+  "2-3 years" = 2.5,
+  "3-4 years" = 3.5,
+  "4-5 years" = 4.5,
+  "5-10 years" = 7.5,
+  "10-20 years" = 15,
+  "20 or more years" = 20
+)
+data$Q15 <- as.numeric(recode(data$Q15, !!!experience_mapping))
+
+# Map Q24 (Compensation) to numeric values
+compensation_mapping <- c(
+  "$0-999" = 500, "1,000-1,999" = 1500, "2,000-2,999" = 2500, "3,000-3,999" = 3500,
+  "4,000-4,999" = 4500, "5,000-7,499" = 6250, "7,500-9,999" = 8750, "10,000-14,999" = 12500,
+  "15,000-19,999" = 17500, "20,000-24,999" = 22500, "25,000-29,999" = 27500,
+  "30,000-39,999" = 35000, "40,000-49,999" = 45000, "50,000-59,999" = 55000,
+  "60,000-69,999" = 65000, "70,000-79,999" = 75000, "80,000-89,999" = 85000,
+  "90,000-99,999" = 95000, "100,000-124,999" = 112500, "125,000-149,999" = 137500,
+  "150,000-199,999" = 175000, "200,000-249,999" = 225000, "250,000-299,999" = 275000,
+  "300,000-500,000" = 400000, "> $500,000" = 500000
+)
+data$Q24 <- as.numeric(recode(data$Q24, !!!compensation_mapping))
+
+# Handle categorical variables
+data$Q4 <- as.numeric(as.factor(data$Q4))
+
+# Replace NA values with 0
+data[is.na(data)] <- 0
+
+# Preview the cleaned data
+head(data)
+```
+```{r include = FALSE}
+# Standardize the features
+data_scaled <- scale(data[, c("Q15", "Q24", "Q4")])
+
+# Perform K-Means clustering
+set.seed(42)
+kmeans_model <- kmeans(data_scaled, centers = 4, nstart = 25)
+data$Cluster <- as.factor(kmeans_model$cluster)
+
+# Print cluster centers
+print(kmeans_model$centers)
+```
+```{r echo = FALSE, fig.height=4, fig.width=6}
+# Perform PCA
+pca <- prcomp(data_scaled, center = TRUE, scale. = TRUE)
+pca_data <- as.data.frame(pca$x[, 1:2])
+pca_data$Cluster <- data$Cluster
+
+# Visualize PCA with clusters
+ggplot(pca_data, aes(x = PC1, y = PC2, color = Cluster)) +
+  geom_point(size = 2, alpha = 0.8) +
+  labs(
+    title = "Career Pathway Clusters",
+    x = "PCA Component 1",
+    y = "PCA Component 2",
+    color = "Cluster"
+  ) +
+  theme_minimal()
+```
+```{r echo = FALSE}
+# Group data by cluster and calculate mean values
+cluster_summary <- data %>%
+  group_by(Cluster) %>%
+  summarise(
+    Avg_Experience = mean(Q15, na.rm = TRUE),
+    Avg_Compensation = mean(Q24, na.rm = TRUE),
+    Avg_Education = mean(Q4, na.rm = TRUE),
+  )
+
+# Print cluster summary
+print(cluster_summary)
+```
+The clustering analysis reveals distinct career pathways in data science based on experience, education, and compensation:
+
+- **Cluster 1 (Early-Career Professionals):**  
+  This cluster represents individuals with minimal experience (0.96 years on average) and low average compensation ($7,739). Their average education level is 2.13, indicating most have some college experience without completing a bachelor's degree or are early in their educational journey. This group aligns with entry-level professionals or students who are just beginning their data science careers.
+
+- **Cluster 2 (Seasoned Experts):**  
+  Individuals in this cluster have significant experience, with an average of 17.1 years, and are compensated accordingly ($104,175 on average). The average education level is 3.89, suggesting that most respondents hold a master's degree or higher. This cluster represents established professionals who have progressed to senior or specialized roles in their careers.
+
+- **Cluster 3 (Highly Educated Newcomers):**  
+  Cluster 3 consists of individuals with low experience (1.07 years on average) and modest compensation ($10,827). However, their standout feature is the high average education level of 5.47, indicating advanced degrees such as master's, doctoral, or professional degrees. These individuals are likely transitioning from academia to professional data science roles, leveraging their education to build careers.
+
+- **Cluster 4 (Mid-Career Professionals):**  
+  This cluster includes individuals with 3.67 years of experience and the highest average compensation ($138,589). Their average education level is 4.13, which corresponds to respondents holding master's or doctoral degrees. These individuals are likely in mid-career positions, experiencing accelerated career growth and benefiting from the combination of advanced education and practical experience.
+
+This analysis underscores the interplay between education, experience, and compensation in shaping career trajectories in data science. The insights highlight opportunities for professionals at various career stages to enhance their growth, whether through advanced education or gaining practical experience.
+
+# Conclusion
+This project provided an in-depth analysis of the Kaggle Survey 2020 dataset, exploring the dynamics of data science and machine learning professionals worldwide. By addressing questions on demographic and economic factors, programming language preferences, cloud platform adoption, educational resource effectiveness, and career pathways, we derived meaningful insights into the evolving landscape of the field.
+
+1. **Demographic and Economic Correlation (Q1):**  
+   The analysis revealed that factors such as age, gender, country, and education significantly influence income levels. Older respondents with advanced degrees earned higher compensation, reflecting the value of experience and education in career progression. However, notable gender disparities persisted across all levels, highlighting ongoing inequities. Regional differences further underscored the economic advantages of developed countries, where professionals reported substantially higher earnings.
+
+2. **Programming Language Adoption (Q2):**  
+   Trends in programming language usage varied by experience and industry. Beginners predominantly used Python and SQL, foundational tools for entering the data science domain. In contrast, experienced professionals adopted niche languages like R, Bash, and Julia for specialized tasks. Industry-specific preferences further emerged, with Python dominating data science roles and SQL widely used in engineering and database-focused positions.
+
+3. **Impact of Cloud Computing on Advanced ML Usage (Q3):**  
+   The analysis of cloud platform adoption revealed that platforms such as Tencent Cloud, Alibaba Cloud, and Google Cloud Platform demonstrated strong associations with advanced ML users, reflecting their robust AI ecosystems. Conversely, platforms like Salesforce Cloud and Oracle Cloud catered more to enterprise needs, with lower adoption by advanced ML practitioners. The results highlighted the role of cloud computing in enabling advanced analytics and AI capabilities.
+
+4. **Effectiveness of Educational Resources (Q4):**  
+   Educational resources showed varying impacts on experience levels and compensation outcomes. Beginner-friendly platforms like Coursera and LinkedIn Learning were popular among early-career professionals, while university courses and cloud certification programs were associated with higher compensation, reflecting their appeal to advanced learners. The findings emphasized the importance of tailoring resources to meet the diverse needs of learners at different career stages.
+
+5. **Advanced Analysis – Career Pathways:**  
+   Clustering analysis identified four distinct career pathways based on experience, compensation, and education. Cluster 1 represented entry-level professionals with minimal experience and education, while Cluster 2 highlighted seasoned experts with high compensation and advanced degrees. Cluster 3 captured highly educated newcomers transitioning from academia to industry, and Cluster 4 showcased mid-career professionals with rapid compensation growth. These clusters underscored the interplay between education, experience, and career progression in shaping professional trajectories.
+
+This study illuminated the diverse dynamics of the data science field, providing actionable insights into the factors driving professional growth and specialization. Demographic and economic disparities emphasized the importance of addressing gender inequities and regional differences. Programming language adoption highlighted the utility of Python for beginners and the strategic integration of niche languages by experienced professionals. Cloud platform trends showcased the critical role of advanced ML capabilities in shaping platform preferences. Educational resources emerged as key enablers of career growth, with specific platforms and programs linked to higher compensation and advanced expertise.
+
+The clustering analysis reinforced the significance of education and experience in navigating career pathways, offering a roadmap for aspiring professionals and organizations to strategize skill development and role transitions. Together, these findings contribute to a nuanced understanding of the global data science ecosystem, paving the way for more informed decision-making in education, recruitment, and professional development.
 
